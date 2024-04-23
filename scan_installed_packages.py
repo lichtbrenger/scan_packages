@@ -22,14 +22,16 @@ def check_vulnerabilities(package):
             for line_number, line in enumerate(file, 1):
                 if patterns[0].search(line):
                     if patterns[1].search(line):
-                        return True
+                        package["vulnerable"] = 'yes'
+                        return
 
-    return False
+    package["vulnerable"] = 'no'
 
 '''
 The function retrieves installed packages using regular expressions.
 Taking into account the operating system that is being used.
 We return a dictionary with the package name and package version.
+This could also be done using dnf list installed | awk '{print $1}'
 '''
 def get_installed_packages():
     package_dictionary = []
@@ -45,17 +47,17 @@ def get_installed_packages():
         list_packages = output.decode('utf-8').split('\n')
         pattern = r'\d+(\.\d+)+'
         for package in list_packages:
+            # Get the version of the package
             pattern = r'(\d+(\.\d+)*(-\d+)*)'
             match = re.search(pattern, package)
             if match:
                 version = match.group()
-            # package name
-            # reverts to default when match not found
+            # Get the name of the package
             pattern = r'^([a-zA-Z0-9-]+)-[0-9]+(\.[0-9]+)*(-[a-zA-Z0-9]+)*(-[a-zA-Z0-9_.]+)*(-[a-zA-Z0-9]+)*$'
             match = re.match(pattern, package)
             if match:
                 package_name = match.group(1)
-            package_info = {'name': package_name, 'version': version}
+            package_info = { 'name': package_name, 'version': version, 'vulnerable': undecided }
             package_dictionary.append(package_info)
 
 
@@ -64,15 +66,15 @@ def get_installed_packages():
     else:
         return "Unsupported package manager."
 
-def write_packages():
-installed_packages = get_installed_packages()
-amount_of_vulnerabilities = 0
-for package in installed_packages:
-    contains_vulnerability = check_vulnerabilities(package)
-    if contains_vulnerability:
-        amount_of_vulnerabilities += 1
+def check_all_packages():
+    installed_packages = get_installed_packages()
+    amount_of_vulnerabilities = 0
+    for package in installed_packages:
+        contains_vulnerability = check_vulnerabilities(package)
+        if contains_vulnerability:
+            amount_of_vulnerabilities += 1
 
-if amount_of_vulnerabilities > 0:
-    return True
+    if amount_of_vulnerabilities > 0:
+        return True
 
-return False
+    return False
