@@ -3,6 +3,7 @@ import subprocess
 import re
 import requests
 import os
+import sqlite3
 
 
 '''
@@ -26,6 +27,32 @@ def check_vulnerabilities(package):
                         return
 
     package["vulnerable"] = 'no'
+
+'''
+Updates vulnerable packages using a local sqlite database.
+'''
+def update_vulnerable_packages():
+    conn = sqlite3.connect('./history.sqlite')
+    cursor = conn.cursor()
+    cursor.execute('''
+            ALTER TABLE products
+            ADD COLUMN vulnerable BOOLEAN DEFAULT FALSE;
+            ''')
+    conn.commit()
+'''
+Uses a local database to query locally installed packages.
+This database is a copy of the dnf sqlite database.
+'''
+def get_installed_packages_sqlite():
+    conn = sqlite3.connect('./history.sqlite')
+    cursor = conn.cursor()
+    cursor.execute("SELECT name,version FROM rpm")
+    rows = cursor.fetchall()
+
+    for row in rows:
+        print(row)
+    conn.close()
+
 
 '''
 The function retrieves installed packages using regular expressions.
@@ -78,3 +105,5 @@ def check_all_packages():
         return True
 
     return False
+
+get_installed_packages_sqlite()
