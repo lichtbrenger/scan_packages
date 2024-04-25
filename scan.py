@@ -3,6 +3,7 @@
 This module scans installed packages
 '''
 
+import os
 import packages
 import re
 
