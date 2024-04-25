@@ -71,7 +71,7 @@ def get_installed_packages():
             match = re.match(pattern, package)
             if match:
                 package_name = match.group(1)
-            package_info = { 'name': package_name, 'version': version, 'vulnerable': undecided }
+            package_info = { 'name': package_name, 'version': version, 'vulnerable': 'undecided' }
             package_dictionary.append(package_info)
 
 
