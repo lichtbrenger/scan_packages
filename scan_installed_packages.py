@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
+
 import subprocess
 import re
-import requests
 import os
 import sqlite3
-
 
 '''
 Checks vulnerabilities of the given package
@@ -19,7 +18,7 @@ def check_vulnerabilities(package):
     patterns = [re.compile(pattern) for pattern in search_strings]
     for filename in os.listdir(directory):
         filepath = os.path.join(directory, filename)
-        with open(filepath, 'r') as file:
+        with open(filepath, 'r', encoding='utf-8') as file:
             for line_number, line in enumerate(file, 1):
                 if patterns[0].search(line):
                     if patterns[1].search(line):
@@ -68,7 +67,7 @@ def get_installed_packages():
 
         return 'not implemented yet'
 
-    elif subprocess.call(['which', 'yum']) == 0:
+    if subprocess.call(['which', 'yum']) == 0:
         process = subprocess.Popen(['rpm', '-qa'], stdout=subprocess.PIPE)
         output, _ = process.communicate()
         list_packages = output.decode('utf-8').split('\n')
@@ -80,7 +79,8 @@ def get_installed_packages():
             if match:
                 version = match.group()
             # Get the name of the package
-            pattern = r'^([a-zA-Z0-9-]+)-[0-9]+(\.[0-9]+)*(-[a-zA-Z0-9]+)*(-[a-zA-Z0-9_.]+)*(-[a-zA-Z0-9]+)*$'
+            pattern = r'^([a-zA-Z0-9-]+)-[0-9]+(\.[0-9]+)*' \
+                     '(-[a-zA-Z0-9]+)*(-[a-zA-Z0-9_.]+)*(-[a-zA-Z0-9]+)*$'
             match = re.match(pattern, package)
             if match:
                 package_name = match.group(1)
@@ -105,5 +105,3 @@ def check_all_packages():
         return True
 
     return False
-
-get_installed_packages_sqlite()
