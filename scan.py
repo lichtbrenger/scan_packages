@@ -15,8 +15,9 @@ name and version.
 e.g. cpe:2.3:a:zlib:zlib:1.1.4:*:*:*:*:*:*:*
 '''
 def check_vulnerabilities(package):
+    package = list(package)
     directory = './nvd'
-    search_strings = [r':'+package["name"]+':', r':'+package["version"]+':']
+    search_strings = [r':'+package[1]+':', r':'+package[2]+':']
     patterns = [re.compile(pattern) for pattern in search_strings]
     for filename in os.listdir(directory):
         filepath = os.path.join(directory, filename)
@@ -24,11 +25,17 @@ def check_vulnerabilities(package):
             for line_number, line in enumerate(file, 1):
                 if patterns[0].search(line):
                     if patterns[1].search(line):
-                        package["vulnerable"] = 'yes'
+                        package[3] = 0
                         return
+    package[3] = 1
 
-    package["vulnerable"] = 'no'
+    return tuple(package)
 
+    
+def check_package():
+    installed_package = packages.retrieve_package()
+    checked_package = check_vulnerabilities(installed_package)
+    packages.update_package(checked_package)
 
 def check_all_packages():
     installed_packages = packages.get_installed_packages()
@@ -42,3 +49,5 @@ def check_all_packages():
         return True
 
     return False
+
+check_package()
