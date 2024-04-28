@@ -20,15 +20,28 @@ def retrieve_operating_system():
 '''
 Updates vulnerable packages using a local sqlite database.
 '''
-def update_vulnerable_packages():
+def update_package(package):
     conn = sqlite3.connect('./packages.sqlite')
     cursor = conn.cursor()
     cursor.execute('''
-            ALTER TABLE products
-            ADD COLUMN vulnerable BOOLEAN DEFAULT FALSE;
-            ''')
+            UPDATE packages
+            SET vulnerable = ?
+            WHERE id = ?;
+            ''', (package[3], package[0]))
     conn.commit()
+    conn.close()
 
+def retrieve_package():
+    conn = sqlite3.connect('./packages.sqlite')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT id,name,version,vulnerable
+        FROM packages
+        WHERE vulnerable == 2
+        LIMIT 1;
+    ''')
+    package = cursor.fetchone()
+    return package
 
 '''
 Uses a local database to query locally installed packages.
