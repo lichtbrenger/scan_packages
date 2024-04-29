@@ -41,8 +41,9 @@ def display_vulnerable_packages():
     
 def check_package():
     installed_package = packages.retrieve_package()
-    checked_package = check_vulnerabilities(installed_package)
-    packages.update_package(checked_package)
+    if installed_package:
+        checked_package = check_vulnerabilities(installed_package)
+        packages.update_package(checked_package)
 
 def check_all_packages():
     installed_packages = packages.get_installed_packages()
@@ -56,5 +57,3 @@ def check_all_packages():
         return True
 
     return False
-
-check_package()
