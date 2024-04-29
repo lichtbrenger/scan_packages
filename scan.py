@@ -13,6 +13,10 @@ using a local version of the national vulnerability database.
 We try to find a match with the CPE id by using seperators (:) together with the package
 name and version.
 e.g. cpe:2.3:a:zlib:zlib:1.1.4:*:*:*:*:*:*:*
+Because sqlite does not support booleans we use integers.
+2 = not scanned yet
+1 = not vulnerable 
+0 = vulnerable
 '''
 def check_vulnerabilities(package):
     package = list(package)
@@ -31,6 +35,9 @@ def check_vulnerabilities(package):
 
     return tuple(package)
 
+def display_vulnerable_packages():
+    vulnerable_packages = packages.retrieve_vulnerable_packages()
+    print(vulnerable_packages)
     
 def check_package():
     installed_package = packages.retrieve_package()

@@ -43,15 +43,13 @@ def retrieve_package():
     package = cursor.fetchone()
     return package
 
-'''
-Uses a local database to query locally installed packages.
-This database is a copy of the dnf sqlite database.
-returns a tupple
-'''
-def retrieve_packages():
+def retrieve_vulnerable_packages():
     conn = sqlite3.connect('./packages.sqlite')
     cursor = conn.cursor()
-    cursor.execute("SELECT name,version FROM rpm")
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
+    cursor.execute('''
+        SELECT id,name,version,vulnerable
+        FROM packages
+        WHERE vulnerable == 0
+    ''')
+    vulnerable_packages = cursor.fetchall()
+    return vulnerable_packages
