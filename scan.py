@@ -40,10 +40,13 @@ def display_vulnerable_packages():
     print(vulnerable_packages)
     
 def check_package():
-    installed_package = packages.retrieve_package()
-    if installed_package:
+    try:
+        installed_package = packages.retrieve_package()
         checked_package = check_vulnerabilities(installed_package)
         packages.update_package(checked_package)
+        return True
+    except Exception as e:
+        return False
 
 def check_all_packages():
     installed_packages = packages.get_installed_packages()
@@ -57,3 +60,6 @@ def check_all_packages():
         return True
 
     return False
+
+while True:
+    check_package()
