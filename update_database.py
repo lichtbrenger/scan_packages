@@ -10,6 +10,16 @@ import logging
 import sqlite3
 logger = logging.getLogger(__name__)
 
+def retrieve_packages():
+    operating_system = retrieve_operating_system()
+    if operating_system == 'fedora':
+        conn = sqlite3.connect('/var/lib/dnf/history.sqlite')
+        cursor = conn.cursor()
+        cursor.execute("SELECT name,version FROM rpm")
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+
 def retrieve_db_packages():
     conn = sqlite3.connect('./packages.sqlite')
     cursor = conn.cursor()
