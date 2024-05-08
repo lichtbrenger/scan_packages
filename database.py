@@ -6,7 +6,10 @@ This module handles operations on the loca database.
 import subprocess
 import re
 import os
+import logging
 import sqlite3
+logger = logging.getLogger(__name__)
+
 
 def retrieve_db_packages():
     conn = sqlite3.connect('./packages.sqlite')
@@ -30,7 +33,6 @@ def add_newly_installed_packages():
 
         conn.commit()
         conn.close()
-
 def remove_package_from_db(package_name):
     conn = sqlite3.connect('./packages.sqlite')
     cursor = conn.cursor()
@@ -90,3 +92,61 @@ def update_packages():
             if db_package[1] == os_package[0]:
                 if db_package[2] != os_package[1]:
                     update_package((db_package[0], os_package[1]))
+
+
+'''
+This function retrieves the Operating System that is being used.
+'''
+def retrieve_operating_system():
+    if subprocess.call(['which', 'apt-get']) == 0:
+        return 'ubuntu'
+    if subprocess.call(['which', 'yum']) == 0:
+        return 'fedora'
+
+'''
+Updates vulnerable packages using a local sqlite database.
+'''
+def update_package(package):
+    logger.info('updating package:' + package)
+    conn = sqlite3.connect('./packages.sqlite')
+    cursor = conn.cursor()
+    cursor.execute('''
+            UPDATE packages
+            SET vulnerable = ?
+            WHERE id = ?;
+            ''', (package[3], package[0]))
+    conn.commit()
+    conn.close()
+
+def retrieve_package():
+    conn = sqlite3.connect('./packages.sqlite')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT id,name,version,vulnerable
+        FROM packages
+        WHERE vulnerable == 2
+        LIMIT 1;
+    ''')
+    package = cursor.fetchone()
+
+    if not package:
+        logger.info('All packages scanned')
+        return
+    
+    logger.info('retrieved package' + package)
+    return package
+
+def retrieve_vulnerable_packages():
+    conn = sqlite3.connect('./packages.sqlite')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT id,name,version,vulnerable
+        FROM packages
+        WHERE vulnerable == 0
+    ''')
+    vulnerable_packages = cursor.fetchall()
+
+    if not vulnerable_packages:
+        logger.info('No vulnerable packages found')
+
+    return vulnerable_packages
