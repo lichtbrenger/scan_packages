@@ -6,6 +6,7 @@ This module scans installed packages
 import os
 import packages
 import re
+import requests
 
 '''
 Checks vulnerabilities of the given package
@@ -18,19 +19,19 @@ Because sqlite does not support booleans we use integers.
 1 = not vulnerable 
 0 = vulnerable
 '''
-def check_vulnerabilities(package):
-    package = list(package)
-    directory = './nvd'
+
+def check_vulnerabilities_online(package):
+    url = f"https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch={package[1]}"
+    response = requests.get(url)
+    response_data = response.json()
+    string_data = json.dumps(response_data)
+
     search_strings = [r':'+package[1]+':', r':'+package[2]+':']
     patterns = [re.compile(pattern) for pattern in search_strings]
-    for filename in os.listdir(directory):
-        filepath = os.path.join(directory, filename)
-        with open(filepath, 'r', encoding='utf-8') as file:
-            for line_number, line in enumerate(file, 1):
-                if patterns[0].search(line):
-                    if patterns[1].search(line):
-                        package[3] = 0
-                        return
+    if patterns[0].search(response_data):
+        if patterns[1].search(response_data):
+            package[3] = 0
+            return
     package[3] = 1
 
     return tuple(package)
@@ -40,13 +41,12 @@ def display_vulnerable_packages():
     print(vulnerable_packages)
     
 def check_package():
-    try:
-        installed_package = packages.retrieve_package()
-        checked_package = check_vulnerabilities(installed_package)
-        packages.update_package(checked_package)
-        return True
-    except Exception as e:
+    installed_package = packages.retrieve_package()
+    if not installed_package:
         return False
+    checked_package = check_vulnerabilities_online(installed_package)
+    packages.update_package(checked_package)
+    return True
 
 def check_all_packages():
     installed_packages = packages.get_installed_packages()
@@ -61,5 +61,6 @@ def check_all_packages():
 
     return False
 
-while True:
-    check_package()
+#while True:
+    #check_package()
+check_package()
