@@ -5,19 +5,6 @@ import multiprocessing
 import logging
 import scan
 
-def create_file():
-    filename = './daemon.log'
-    # Check if the file exists
-    if not os.path.exists('./daemon.log'):
-         # Command to create a file
-        command = f"touch {filename}"
-        # Execute the command using subprocess.Popen
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        print(f"File '{filename}' created successfully.")
-    else:
-        print(f"File '{filename}' already exists.")
-
 def worker_function(task_id):
     while True:
         successful = scan.check_package()
