@@ -26,6 +26,7 @@ def retrieve_db_packages():
     cursor.execute("SELECT id,name,version FROM packages")
     rows = cursor.fetchall()
     conn.close()
+    logger.info('successfully retrieved all packages from personal database\n')
     return rows
 
 def add_newly_installed_packages():
@@ -42,17 +43,28 @@ def add_newly_installed_packages():
 
         conn.commit()
         conn.close()
+        logger.info('successfully added new packages to the personal database.')
+        return
+
+    logger.info('No new packages were found.')
+
 
 def remove_package_from_db(package_name):
-    conn = sqlite3.connect('./packages.sqlite')
-    cursor = conn.cursor()
+    try:
+        conn = sqlite3.connect('./packages.sqlite')
+        cursor = conn.cursor()
 
-    cursor.execute('''
-                    DELETE FROM packages
-                    WHERE name = ?;
-                    ''', (package_name))
-    conn.commit()
-    conn.close()
+        cursor.execute('''
+                        DELETE FROM packages
+                        WHERE name = ?;
+                        ''', (package_name))
+        conn.commit()
+        conn.close()
+        logger.info(f'deleted {package_name} from personal database.')
+        
+    except sqlite3.Error as e:
+        logger.error(f'The following error was encountered:\n{e}.')
+
 
 def retrieve_db_packages_name():
     conn = sqlite3.connect('./packages.sqlite')
@@ -60,6 +72,7 @@ def retrieve_db_packages_name():
     cursor.execute("SELECT name FROM packages")
     rows = cursor.fetchall()
     conn.close()
+    logger.info('successfully retrieved package names from personal database.')
     return rows
 
 def retrieve_packages_name():
@@ -117,16 +130,20 @@ def retrieve_operating_system():
 Updates vulnerable packages using a local sqlite database.
 '''
 def update_package(package):
-    logger.info('updating package:' + package)
-    conn = sqlite3.connect('./packages.sqlite')
-    cursor = conn.cursor()
-    cursor.execute('''
-            UPDATE packages
-            SET vulnerable = ?
-            WHERE id = ?;
-            ''', (package[3], package[0]))
-    conn.commit()
-    conn.close()
+    if package:
+        logger.info('updating package:' + package[1])
+        conn = sqlite3.connect('./packages.sqlite')
+        cursor = conn.cursor()
+        cursor.execute('''
+                UPDATE packages
+                SET vulnerable = ?
+                WHERE id = ?;
+                ''', (package[3], package[0]))
+        conn.commit()
+        conn.close()
+        return
+
+    logger.info(f'package, {package}, could not be updated.')
 
 def retrieve_package():
     conn = sqlite3.connect('./packages.sqlite')
@@ -143,7 +160,7 @@ def retrieve_package():
         logger.info('All packages scanned')
         return
     
-    logger.info('retrieved package' + package)
+    logger.info('retrieved package: ' + package[1])
     return package
 
 def retrieve_vulnerable_packages():
