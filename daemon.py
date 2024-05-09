@@ -2,35 +2,34 @@ import os
 import sys
 import time
 import multiprocessing
-import logging
 import scan
 
+'''
+Define the work that each worker should be assigned.
+In this case each worker will check a package from the personal database
+continuously. When the scan did not complete successfully we stop the scanning process of that worker.
+'''
 def worker_function(task_id):
     while True:
         successful = scan.check_package()
         if not successful:
             break
-        logging.info(f"Worker {task_id} is working...")
-        time.sleep(2)  # Simulate some work
 
+'''
+Limit the CPU usage because it will be a continuous process that is run in the background.
+We do this via the nice function and assign a below normal priority.
+more information: https://en.wikipedia.org/wiki/Nice_(Unix)
+'''
 def limit_cpu():
     p = psutil.Process(os.getpid())
-    # set to lowest priority, this is windows only, on Unix use ps.nice(19)
     p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
 
-def main():
-    # Set up logging
-    logging.basicConfig(filename='./daemon.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    # Redirect standard output and error to both the log file and /dev/null
-    sys.stdout.flush()
-    sys.stderr.flush()
-    log_file = open('./daemon.log', 'a')
-    with open("/dev/null", "r") as dev_null:
-        os.dup2(dev_null.fileno(), sys.stdin.fileno())
-        os.dup2(log_file.fileno(), sys.stdout.fileno())
-        os.dup2(log_file.fileno(), sys.stderr.fileno())
-
+'''
+Main function were we create a number of workers equivalnt to the number of CPU cores.
+Afterward we will put the work to work asynchronously.
+'''
+def start_process():
     # Create a pool of worker processes
     pool = multiprocessing.Pool(None, limit_cpu)
 
@@ -47,13 +46,7 @@ def main():
             time.sleep(1)
 
     except KeyboardInterrupt:
-        logging.info("Interrupted, terminating processes...")
         pool.terminate()
         pool.join()
-        logging.info("Processes terminated.")
-    finally:
-        log_file.close()
 
-if __name__ == "__main__":
-    # Daemonize the script
-    main()
+start_process()
