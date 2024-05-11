@@ -53,6 +53,13 @@ def query_db(conn, query):
         cursor = conn.cursor()
         cursor.execute(query)
         rows = cursor.fetchall()
+        
+        if not rows:
+            logger.error(f'could not retrieve any data using the following query: {os_dict["queries"][0]}.')
+            return
+
+        conn.close()
+        return rows
 
     except sqlite3.Error as e:
         logger.error(f"An error occurred while querying the database: {e}")
@@ -60,31 +67,12 @@ def query_db(conn, query):
 
 def retrieve_packages():
     os_dict = determine_os_database()
+    packages = query_db(os_dict['queries'][0])
+    return packages
 
-    if not os_dict['queries']:
-        logger.error('could not proceed with retrieving packages, query not found.')
-
-
-    conn = sqlite3.connect(os_dict['database location'])
-    cursor = conn.cursor()
-    cursor.execute(os_dict['queries'][0])
-    rows = cursor.fetchall()
-
-    if not rows:
-        logger.error(f'could not retrieve any data using the following query: {os_dict["queries"][0]}.')
-        return
-
-    conn.close()
-    return rows
-
+    
 
 def retrieve_packages_name():
-    database_location = determine_os_database()
-    conn = sqlite3.connect(database_location)
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM rpm")
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
-
-determine_os_database()
+    os_dict = determine_os_database()
+    packages = query_db(os_dict['queries'][1])
+    return packages
