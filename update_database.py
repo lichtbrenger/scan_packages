@@ -35,7 +35,7 @@ from the personal database.
 '''
 def discard_uninstalled_packages():
     os_packages = set(os_interface.retrieve_packages_name())
-    database_packages = set(database.retrieve_db_packages_name())
+    database_packages = set(database.retrieve_packages_name())
     uninstalled_packages = database_packages - os_packages
     uninstalled_packages = list(uninstalled_packages)
     for uninstalled_package in uninstalled_packages:
@@ -51,8 +51,8 @@ When there is a discrepancy we assume the package version is outdated because th
 could come an update in the operating system's database.
 '''
 def update_packages():
-    os_packages = retrieve_packages()
-    db_packages = retrieve_db_packages()
+    os_packages = os_interface.retrieve_packages()
+    db_packages = database.retrieve_packages()
     for db_package in db_packages:
         for os_package in os_packages:
             if db_package[1] == os_package[0]:

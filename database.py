@@ -8,19 +8,14 @@ import re
 import os
 import logging
 import sqlite3
+import os_interface
 logger = logging.getLogger(__name__)
 
+'''
+retrieve all data from the packages in the 
+personal database
+'''
 def retrieve_packages():
-    operating_system = retrieve_operating_system()
-    if operating_system == 'fedora':
-        conn = sqlite3.connect('/var/lib/dnf/history.sqlite')
-        cursor = conn.cursor()
-        cursor.execute("SELECT name,version FROM rpm")
-        rows = cursor.fetchall()
-        conn.close()
-        return rows
-
-def retrieve_db_packages():
     conn = sqlite3.connect('./packages.sqlite')
     cursor = conn.cursor()
     cursor.execute("SELECT id,name,version FROM packages")
@@ -29,25 +24,17 @@ def retrieve_db_packages():
     logger.info('successfully retrieved all packages from personal database\n')
     return rows
 
-def add_newly_installed_packages():
-    os_packages = set(retrieve_packages())
-    database_packages = set(retrieve_db_packages())
-    new_packages = database_packages.difference(os_packages)
-    if new_packages:
-        # insert new packages into local sqlite db
-        conn = sqlite3.connect('./packages.sqlite')
-        cursor = conn.cursor()
+def insert_package(package):
+    conn = sqlite3.connect('./packages.sqlite')
+    cursor = conn.cursor()
 
-        for package in new_packages:
-            cursor.execute("INSERT INTO packages (name, version, vulnerable) VALUES (?, ?, ?)", (package[0], package[1], 2))
+    cursor.execute("INSERT INTO packages (name, version, vulnerable) VALUES (?, ?, ?)", (package[0], package[1], 2))
 
-        conn.commit()
-        conn.close()
-        logger.info('successfully added new packages to the personal database.')
-        return
+    conn.commit()
+    conn.close()
+    logger.info(f'successfully added package {package} to the personal database.')
 
-    logger.info('No new packages were found.')
-
+    
 
 def remove_package_from_db(package_name):
     try:
@@ -65,8 +52,12 @@ def remove_package_from_db(package_name):
     except sqlite3.Error as e:
         logger.error(f'The following error was encountered:\n{e}.')
 
-
-def retrieve_db_packages_name():
+'''
+Retrieves the all the names of the packages
+from the personal database.
+and returns a list of tupples.
+'''
+def retrieve_packages_name():
     conn = sqlite3.connect('./packages.sqlite')
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM packages")
@@ -75,25 +66,11 @@ def retrieve_db_packages_name():
     logger.info('successfully retrieved package names from personal database.')
     return rows
 
-def retrieve_packages_name():
-    operating_system = retrieve_operating_system()
-    if operating_system == 'fedora':
-        conn = sqlite3.connect('/var/lib/dnf/history.sqlite')
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM rpm")
-        rows = cursor.fetchall()
-        conn.close()
-        return rows
-
-
-def discard_uninstalled_packages():
-    os_packages = set(retrieve_packages_name())
-    database_packages = set(retrieve_db_packages_name())
-    uninstalled_packages = database_packages - os_packages
-    uninstalled_packages = list(uninstalled_packages)
-    for uninstalled_package in uninstalled_packages:
-        remove_package_from_db(uninstalled_package)
-
+'''
+Updates one package given an ID.
+The function takes a package and,
+resets the vulnerability status to unchecked.
+'''
 def update_package(package):
     conn = sqlite3.connect('./packages.sqlite')
     cursor = conn.cursor()
@@ -109,7 +86,7 @@ def update_package(package):
 
 def update_packages():
     os_packages = retrieve_packages()
-    db_packages = retrieve_db_packages()
+    db_packages = os_interface.retrieve_packages()
     for db_package in db_packages:
         for os_package in os_packages:
             if db_package[1] == os_package[0]:
@@ -117,14 +94,6 @@ def update_packages():
                     update_package((db_package[0], os_package[1]))
 
 
-'''
-This function retrieves the Operating System that is being used.
-'''
-def retrieve_operating_system():
-    if subprocess.call(['which', 'apt-get']) == 0:
-        return 'ubuntu'
-    if subprocess.call(['which', 'yum']) == 0:
-        return 'fedora'
 
 '''
 Updates vulnerable packages using a local sqlite database.
@@ -152,6 +121,7 @@ def retrieve_package():
         SELECT id,name,version,vulnerable
         FROM packages
         WHERE vulnerable == 2
+        ORDER BY RANDOM()
         LIMIT 1;
     ''')
     package = cursor.fetchone()
@@ -177,3 +147,19 @@ def retrieve_vulnerable_packages():
         logger.info('No vulnerable packages found')
 
     return vulnerable_packages
+
+def count_vulnerable_packages():
+    conn = sqlite3.connect('/home/yide/scan_packages/packages.sqlite')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT COUNT(*)
+        FROM packages
+        WHERE vulnerable == 0
+    ''')
+    vulnerable_packages = cursor.fetchall()
+
+    if not vulnerable_packages:
+        logger.info('No vulnerable packages found')
+
+    return vulnerable_packages[0][0]
+
