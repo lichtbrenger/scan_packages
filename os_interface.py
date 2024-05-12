@@ -17,9 +17,9 @@ def determine_os_database():
     if subprocess.call(['which', 'yum']) == 0:
         os_dict['operating system'] = 'fedora'
         os_dict['database location'] = '/var/lib/dnf/history.sqlite'
-        os_dict['queries'] = ['select name,version form rpm', 'select name from rpm']
+        os_dict['queries'] = ['select name,version from rpm', 'select name from rpm']
 
-    if os_dict['operating system'] and os_dict['database location'] and os_dict['query']:
+    if os_dict['operating system'] and os_dict['database location'] and os_dict['queries']:
         logger.info(f'found operating system: {os_dict["operating system"]}')
         return os_dict
 
@@ -40,7 +40,6 @@ def connect_to_db(database_location):
         return None
 
 def query_db(conn, query):
-
     if not query:
         logger.error('No query provided.')
         return None
@@ -67,12 +66,14 @@ def query_db(conn, query):
 
 def retrieve_packages():
     os_dict = determine_os_database()
-    packages = query_db(os_dict['queries'][0])
+    connection = connect_to_db(os_dict['database location'])
+    packages = query_db(connection, os_dict['queries'][0])
     return packages
 
     
 
 def retrieve_packages_name():
     os_dict = determine_os_database()
-    packages = query_db(os_dict['queries'][1])
+    connection = connect_to_db(os_dict['database location'])
+    packages = query_db(connection, os_dict['queries'][1])
     return packages
